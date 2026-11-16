@@ -58,7 +58,7 @@ except Exception as exc:  # noqa: BLE001
 # --------------------------------------------------------------------------
 st.set_page_config(
     page_title="NEUROVASC-X",
-    page_icon="🧠",
+    page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -71,44 +71,96 @@ st.markdown(
     """
     <style>
     :root {
-        --bg: #f7e8a8;
-        --surface: #fdf6d8;
-        --border: #14110c;
-        --yellow: #f2a90c;
-        --text: #14110c;
-        --text-muted: #6b6350;
-        --red: #c62828;
-        --red-soft: #f6d6d6;
-        --green: #2f7d3c;
-        --green-soft: #d9ecdb;
-        --yellow-soft: #fbe7b8;
+        --bg: #0d0b1e;
+        --bg-gradient: linear-gradient(160deg, #0d0b1e 0%, #14112b 45%, #191340 100%);
+        --surface: #161330;
+        --surface-alt: #1c1840;
+        --border: #33296b;
+        --border-soft: #241f4d;
+        --accent: #7c5cff;
+        --accent-soft: #a78bfa;
+        --text: #ede9fe;
+        --text-muted: #9d97c4;
+        --red: #f87171;
+        --red-soft: rgba(248, 113, 113, 0.12);
+        --green: #4ade80;
+        --green-soft: rgba(74, 222, 128, 0.12);
+        --amber: #fbbf24;
+        --amber-soft: rgba(251, 191, 36, 0.12);
     }
-    .stApp { background-color: var(--bg); }
+
+    html, body, [class*="css"] {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+            Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .stApp {
+        background: var(--bg-gradient);
+        color: var(--text);
+    }
+
+    section[data-testid="stSidebar"] {
+        background-color: var(--surface);
+        border-right: 1px solid var(--border-soft);
+    }
+
     .app-title {
-        font-size: 2.2rem;
-        font-weight: 800;
+        font-size: 2.1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
         color: var(--text);
         margin-bottom: 0;
     }
-    .app-title .accent { color: var(--yellow); }
-    .subtle { color: var(--text-muted); font-size: 0.95rem; }
+    .app-title .accent { color: var(--accent-soft); font-weight: 700; }
+    .subtle { color: var(--text-muted); font-size: 0.95rem; font-weight: 400; }
+
+    h1, h2, h3, .stMarkdown h2, .stMarkdown h3 {
+        color: var(--text);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
     div[data-testid="stMetric"] {
-        background-color: var(--surface);
-        border: 2px solid var(--border);
-        border-radius: 12px;
+        background-color: var(--surface-alt);
+        border: 1px solid var(--border-soft);
+        border-radius: 10px;
         padding: 14px 16px;
     }
+    div[data-testid="stMetricLabel"] { color: var(--text-muted); }
+    div[data-testid="stMetricValue"] { color: var(--text); }
+
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+    }
+
     .status-badge {
         display: inline-block;
-        padding: 10px 22px;
+        padding: 9px 22px;
         border-radius: 999px;
-        font-weight: 700;
-        font-size: 1.05rem;
+        font-weight: 600;
+        font-size: 1rem;
+        letter-spacing: 0.02em;
         border: 1px solid var(--border);
     }
     .badge-green { background-color: var(--green-soft); color: var(--green); border-color: var(--green); }
-    .badge-yellow { background-color: var(--yellow-soft); color: #8a6300; border-color: var(--yellow); }
+    .badge-yellow { background-color: var(--amber-soft); color: var(--amber); border-color: var(--amber); }
     .badge-red { background-color: var(--red-soft); color: var(--red); border-color: var(--red); }
+
+    .stButton > button {
+        background-color: var(--accent);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    .stButton > button:hover {
+        background-color: var(--accent-soft);
+        color: #0d0b1e;
+    }
+
+    .stProgress > div > div { background-color: var(--accent); }
     </style>
     """,
     unsafe_allow_html=True,
@@ -166,15 +218,15 @@ def load_waveform(file_path: str, original_name: str) -> np.ndarray:
 
 def plot_waveform(waveform: np.ndarray):
     fig, ax = plt.subplots(figsize=(5, 2.4))
-    fig.patch.set_facecolor("#fdf6d8")
-    ax.set_facecolor("#fdf6d8")
-    ax.plot(waveform, color="#d99a0a", linewidth=1.2)
-    ax.set_xlabel("Sample", color="#6b6350", fontsize=8)
-    ax.set_ylabel("Amplitude", color="#6b6350", fontsize=8)
-    ax.tick_params(colors="#6b6350", labelsize=7)
+    fig.patch.set_facecolor("#161330")
+    ax.set_facecolor("#161330")
+    ax.plot(waveform, color="#a78bfa", linewidth=1.2)
+    ax.set_xlabel("Sample", color="#9d97c4", fontsize=8)
+    ax.set_ylabel("Amplitude", color="#9d97c4", fontsize=8)
+    ax.tick_params(colors="#9d97c4", labelsize=7)
     for spine in ax.spines.values():
-        spine.set_color("#14110c")
-    ax.grid(alpha=0.15, color="#14110c")
+        spine.set_color("#33296b")
+    ax.grid(alpha=0.15, color="#9d97c4")
     fig.tight_layout()
     return fig
 
@@ -193,7 +245,7 @@ def badge_for_status(status: str) -> str:
 # letting every downstream call raise and risk a broken page.
 # --------------------------------------------------------------------------
 if not ML_ENGINE_OK:
-    st.markdown('<div class="app-title">🧠 Neuro<span class="accent">Vasc</span>-X</div>', unsafe_allow_html=True)
+    st.markdown('<div class="app-title">Neuro<span class="accent">Vasc</span>-X</div>', unsafe_allow_html=True)
     st.error(
         "Could not import ml_engine.py — the app cannot compute risk scores "
         "until this is fixed.\n\n"
@@ -208,10 +260,10 @@ if not ML_ENGINE_OK:
 # Sidebar — Patient Vitals
 # --------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("## 🩺 Patient Vitals")
+    st.markdown("## Patient Vitals")
     st.markdown('<p class="subtle">Baseline demographic & metabolic inputs</p>', unsafe_allow_html=True)
 
-    st.button("⚡ Load Demo High-Risk Patient", on_click=load_demo_patient)
+    st.button("Load Demo High-Risk Patient", on_click=load_demo_patient)
     st.divider()
 
     st.slider("Age", min_value=18, max_value=100, key="age")
@@ -241,7 +293,7 @@ with st.sidebar:
 # --------------------------------------------------------------------------
 # Header
 # --------------------------------------------------------------------------
-st.markdown('<div class="app-title">🧠 Neuro<span class="accent">Vasc</span>-X</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-title">Neuro<span class="accent">Vasc</span>-X</div>', unsafe_allow_html=True)
 st.markdown(
     '<p class="subtle">Multimodal silent-stroke risk stratification — '
     "tabular vitals, ECG waveform, and CT imaging fused into one composite score.</p>",
@@ -277,7 +329,7 @@ p_ct = 0.0
 
 with col1:
     with st.container(border=True):
-        st.subheader("📈 ECG Waveform")
+        st.subheader("ECG Waveform")
         ecg_file = st.file_uploader("Upload ECG (.csv or .npy)", type=["csv", "npy"], key="ecg_uploader")
 
         if ecg_file is not None:
@@ -302,7 +354,7 @@ with col1:
 
 with col2:
     with st.container(border=True):
-        st.subheader("🖼️ CT Scan")
+        st.subheader("CT Scan")
         ct_file = st.file_uploader("Upload CT Scan (.png or .jpg)", type=["png", "jpg", "jpeg"], key="ct_uploader")
 
         if ct_file is not None:
@@ -326,7 +378,7 @@ with col2:
 # Bottom dashboard — Composite risk
 # --------------------------------------------------------------------------
 st.divider()
-st.subheader("📊 Composite Risk Dashboard")
+st.subheader("Composite Risk Dashboard")
 
 try:
     composite_score, status = calculate_composite_risk(p_tab, p_ecg, p_ct)

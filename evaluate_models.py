@@ -18,13 +18,15 @@ Usage
     python evaluate_models.py --tabular-csv stroke_prediction.csv
     python evaluate_models.py --ct-image-dir data/head_ct --ct-labels data/labels.csv \
         --ct-filename-col id --ct-label-col " hemorrhage" --ct-build-filename-from-id
-    # or both in one run
+    python evaluate_models.py --ecg-data-dir data/training2017 --ecg-reference data/training2017/REFERENCE.csv
+    # or all three in one run
     python evaluate_models.py --tabular-csv stroke_prediction.csv \
         --ct-image-dir data/head_ct --ct-labels data/labels.csv \
-        --ct-filename-col id --ct-label-col " hemorrhage" --ct-build-filename-from-id
+        --ct-filename-col id --ct-label-col " hemorrhage" --ct-build-filename-from-id \
+        --ecg-data-dir data/training2017 --ecg-reference data/training2017/REFERENCE.csv
 
 Requires: pip install scikit-learn pandas numpy joblib
-(add torch + torchvision + pillow if evaluating the CT model)
+(add torch + torchvision + pillow + scipy for the CT/ECG evaluations)
 """
 
 import argparse
@@ -142,6 +144,53 @@ def evaluate_ct(image_dir, labels_path, filename_col, label_col, build_filename_
     print_report("CT MODEL (held-out test set)", np.array(y_test, dtype=int), np.array(probs))
 
 
+def evaluate_ecg(data_dir: str, reference_path: str):
+    import torch
+    import torch.nn as nn
+    import torchvision.models as tv_models
+
+    # Reuse the EXACT same loading/preprocessing/split as training, so the
+    # held-out set here is genuinely unseen, not accidentally re-including
+    # training examples.
+    from train_ecg_model import label_from_class, load_and_resample_mat, signal_to_spectrogram_image
+
+    ref = pd.read_csv(reference_path, header=None, names=["filename", "label"])
+    filepaths = [os.path.join(data_dir, f"{fn}.mat") for fn in ref["filename"]]
+    labels = ref["label"].apply(label_from_class).to_numpy()
+
+    keep = np.array([os.path.isfile(fp) for fp in filepaths])
+    filepaths = [fp for fp, k in zip(filepaths, keep) if k]
+    labels = labels[keep]
+
+    _, X_test, _, y_test = train_test_split(
+        filepaths, labels, test_size=0.2, random_state=42, stratify=labels
+    )
+
+    weights_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ecg_cnn.pt")
+    if not os.path.isfile(weights_path):
+        sys.exit("ERROR: ecg_cnn.pt not found -- train the ECG model first")
+
+    model = tv_models.resnet18(weights=None)
+    model.fc = nn.Linear(model.fc.in_features, 1)
+    model.load_state_dict(torch.load(weights_path, map_location="cpu"))
+    model.eval()
+
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+
+    probs = []
+    with torch.no_grad():
+        for fp in X_test:
+            raw_signal = load_and_resample_mat(fp)
+            spec_img = signal_to_spectrogram_image(raw_signal)
+            tensor = torch.tensor(spec_img, dtype=torch.float32).permute(2, 0, 1) / 255.0
+            tensor = ((tensor - mean) / std).unsqueeze(0)
+            prob = torch.sigmoid(model(tensor)).item()
+            probs.append(prob)
+
+    print_report("ECG MODEL (held-out test set, AFib detection)", np.array(y_test, dtype=int), np.array(probs))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--tabular-csv", help="Path to labeled stroke CSV to evaluate the tabular model on")
@@ -152,10 +201,15 @@ def main():
     parser.add_argument("--ct-build-filename-from-id", action="store_true")
     parser.add_argument("--ct-pad-width", type=int, default=3)
     parser.add_argument("--ct-extension", default=".png")
+    parser.add_argument("--ecg-data-dir", help="Path to training2017 folder of .mat recordings")
+    parser.add_argument("--ecg-reference", help="Path to training2017 REFERENCE.csv")
     args = parser.parse_args()
 
-    if not args.tabular_csv and not args.ct_image_dir:
-        sys.exit("ERROR: provide --tabular-csv and/or --ct-image-dir (+ related CT args)")
+    if not args.tabular_csv and not args.ct_image_dir and not args.ecg_data_dir:
+        sys.exit(
+            "ERROR: provide at least one of --tabular-csv, --ct-image-dir (+ related CT args), "
+            "or --ecg-data-dir (+ --ecg-reference)"
+        )
 
     if args.tabular_csv:
         evaluate_tabular(args.tabular_csv)
@@ -170,6 +224,11 @@ def main():
             args.ct_pad_width,
             args.ct_extension,
         )
+
+    if args.ecg_data_dir:
+        if not args.ecg_reference:
+            sys.exit("ERROR: --ecg-reference is required alongside --ecg-data-dir")
+        evaluate_ecg(args.ecg_data_dir, args.ecg_reference)
 
 
 if __name__ == "__main__":

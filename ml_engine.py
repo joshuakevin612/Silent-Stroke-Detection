@@ -728,9 +728,9 @@ def predict_ct_risk(file_path: str = None) -> float:
 # 4. COMPOSITE RISK FUSION
 # ==========================================================================
 
-_WEIGHT_TAB = 0.35
-_WEIGHT_ECG = 0.35
-_WEIGHT_CT = 0.30
+_WEIGHT_TAB = 0.52
+_WEIGHT_ECG = 0.03
+_WEIGHT_CT = 0.45
 
 
 def calculate_composite_risk(p_tab: float, p_ecg: float, p_ct: float) -> Tuple[float, str]:

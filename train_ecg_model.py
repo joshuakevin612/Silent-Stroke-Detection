@@ -229,7 +229,7 @@ def main():
                 xb, yb = xb.to(device), yb.to(device)
                 logits = model(xb)
                 val_loss += criterion(logits, yb).item() * xb.size(0)
-                preds = (torch.sigmoid(logits) >= 0.5).float()
+                preds = (torch.sigmoid(logits) >= 0.3).float()
                 correct += (preds == yb).sum().item()
         val_loss /= len(val_ds)
         val_acc = correct / len(val_ds)
